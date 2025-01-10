@@ -9,6 +9,7 @@ C_SRCS += \
 ../Core/Src/at24c.c \
 ../Core/Src/button.c \
 ../Core/Src/buzzer.c \
+../Core/Src/data_update.c \
 ../Core/Src/dma.c \
 ../Core/Src/ds3231.c \
 ../Core/Src/fsmc.c \
@@ -38,6 +39,7 @@ OBJS += \
 ./Core/Src/at24c.o \
 ./Core/Src/button.o \
 ./Core/Src/buzzer.o \
+./Core/Src/data_update.o \
 ./Core/Src/dma.o \
 ./Core/Src/ds3231.o \
 ./Core/Src/fsmc.o \
@@ -67,6 +69,7 @@ C_DEPS += \
 ./Core/Src/at24c.d \
 ./Core/Src/button.d \
 ./Core/Src/buzzer.d \
+./Core/Src/data_update.d \
 ./Core/Src/dma.d \
 ./Core/Src/ds3231.d \
 ./Core/Src/fsmc.d \

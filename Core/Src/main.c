@@ -126,8 +126,9 @@ int main(void)
 	  if(flag_timer2 == 1){
 		  flag_timer2 = 0;
 		  button_Scan();
-		  test_Esp();
-		  lightProcess();
+		  ADC_Update();
+//		  test_Esp();
+//		  lightProcess();
 		  test_LedDebug();
 	  }
 

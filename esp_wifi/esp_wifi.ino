@@ -2,89 +2,106 @@
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
 
-//Wifi name
-#define WLAN_SSID       "..."
-//Wifi password
-#define WLAN_PASS       "..."
+// WiFi credentials
+#define WLAN_SSID       "network"
+#define WLAN_PASS       "password"
 
-//setup Adafruit
+// Adafruit MQTT configuration
 #define AIO_SERVER      "io.adafruit.com"
 #define AIO_SERVERPORT  1883
-//fill your username                   
-#define AIO_USERNAME    "..."
-//fill your key
-#define AIO_KEY         "..."
+#define AIO_USERNAME    "usename"
+#define AIO_KEY         "key"
 
-//setup MQTT
+// MQTT client
 WiFiClient client;
 Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO_KEY);
 
-//setup publish
+// MQTT topics for publishing
 Adafruit_MQTT_Publish light_pub = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/light");
+Adafruit_MQTT_Publish voltage_pub = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/voltage");
+Adafruit_MQTT_Publish current_pub = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/current");
+Adafruit_MQTT_Publish temp_pub = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/temperature");
 
-//setup subcribe
-Adafruit_MQTT_Subscribe light_sub = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME "/feeds/light", MQTT_QOS_1);
+// Subscription setup
+Adafruit_MQTT_Subscribe light_sub = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME "/feeds/led", MQTT_QOS_1);
 
 int led_counter = 0;
 int led_status = HIGH;
 
-void lightcallback(char* value, uint16_t len){
-  if(value[0] == '0') Serial.print('a');
-  if(value[0] == '1') Serial.print('A');
+// Callback function for light subscription
+void lightcallback(char* value, uint16_t len) {
+  if (value[0] == '0') Serial.print('a');
+  if (value[0] == '1') Serial.print('A');
+}
+
+// UART processing function
+void handleUART() {
+  // Check if UART data is available
+  if (Serial.available()) {
+    String input = Serial.readStringUntil('\n'); // Read the complete line
+    input.trim(); // Remove any trailing whitespace
+
+    // Parse and publish data based on attribute tags
+    if (input.startsWith("!LIGHT:")) {
+      String light = input.substring(7, input.length() - 1); // Extract value
+      light_pub.publish(light.c_str()); // Publish to light topic
+    } else if (input.startsWith("!VOLTAGE:")) {
+      String voltage = input.substring(9, input.length() - 1); // Extract value
+      voltage_pub.publish(voltage.c_str()); // Publish to voltage topic
+    } else if (input.startsWith("!CURRENT:")) {
+      String current = input.substring(9, input.length() - 1); // Extract value
+      current_pub.publish(current.c_str()); // Publish to current topic
+    } else if (input.startsWith("!TEMPERATURE:")) {
+      String temp = input.substring(13, input.length() - 1); // Extract value
+      temp_pub.publish(temp.c_str()); // Publish to temperature topic
+    } else {
+      // Unknown input
+      Serial.println("Unknown UART message received");
+    }
+  }
 }
 
 void setup() {
-  // put your setup code here, to run once:
-  //set pin 2,5 as OUTPUT
+  // Set pin modes
   pinMode(2, OUTPUT);
   pinMode(5, OUTPUT);
-  //set busy pin HIGH
-  digitalWrite(5, HIGH);
+  digitalWrite(5, HIGH); // Set busy pin HIGH
 
+  // Initialize Serial and disable debug output
   Serial.begin(115200);
+  Serial.setDebugOutput(false);
 
-  //connect Wifi
+  // Connect to WiFi
   WiFi.begin(WLAN_SSID, WLAN_PASS);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
   }
 
-  //subscribe light feed
+  // Subscribe to light feed
   light_sub.setCallback(lightcallback);
   mqtt.subscribe(&light_sub);
 
-  //connect MQTT
+  // Connect to MQTT
   while (mqtt.connect() != 0) { 
     mqtt.disconnect();
     delay(500);
   }
 
-  //finish setup, set busy pin LOW
-  digitalWrite(5, LOW);
+  digitalWrite(5, LOW); // Set busy pin LOW after setup
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-
-  //receive packet
+  // Process MQTT packets
   mqtt.processPackets(1);
-  
-  //read serial
-  if(Serial.available()){
-    int msg = Serial.read();
-    if(msg == 'o') Serial.print('O');
-    else if(msg == 'a') light_pub.publish(0);
-    else if(msg == 'A') light_pub.publish(1);
-  }
 
+  // Handle UART input
+  handleUART();
+
+  // LED toggling logic
   led_counter++;
-  if(led_counter == 100){
-    // every 1s
+  if (led_counter == 100) {
     led_counter = 0;
-    //toggle LED
-    if(led_status == HIGH) led_status = LOW;
-    else led_status = HIGH;
-
+    led_status = !led_status; // Toggle LED status
     digitalWrite(2, led_status);
   }
   delay(10);

@@ -2,6 +2,7 @@
 "./Core/Src/at24c.o"
 "./Core/Src/button.o"
 "./Core/Src/buzzer.o"
+"./Core/Src/data_update.o"
 "./Core/Src/dma.o"
 "./Core/Src/ds3231.o"
 "./Core/Src/fsmc.o"
